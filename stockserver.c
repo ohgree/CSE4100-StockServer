@@ -9,8 +9,9 @@
 
 void echo(int connfd);
 
-size_t parse(char *cmd, char **buf);
 void handle_connection(int connfd);
+char *handle_cmd(char *args[], int length);
+size_t parse(char *cmd, char **buf);
 
 int main(int argc, char **argv) {
   int listenfd, connfd;
@@ -52,14 +53,21 @@ void handle_connection(int connfd) {
 
   Rio_readinitb(&rio, connfd);
   while ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) {
-    int argc;
-    char *cmds[MAX_COMMAND_ARGS];
+    int plen;
+    char *response, *pbuf[MAX_COMMAND_ARGS];
+
     debug_print("server received %d bytes", n);
-    argc = parse(rtrim(buf), cmds);
-    for (int i = 0; i < argc; i++) {
-      debug_print("cmds[%d] = \"%s\"", i, cmds[i]);
+
+    plen = parse(rtrim(buf), pbuf);
+    for (int i = 0; i < plen; i++) {
+      debug_print("pbuf[%d] = \"%s\"", i, pbuf[i]);
     }
-    Rio_writen(connfd, buf, strlen(buf) + 1);
+
+    if (response = handle_cmd(pbuf, plen)) {
+      Rio_writen(connfd, response, strlen(response) + 1);
+      free(response);
+    } else {
+    }
   }
 }
 
@@ -83,4 +91,36 @@ size_t parse(char *cmd, char **buf) {
     buf[argc++] = ptr;
   }
   return argc;
+}
+
+/**
+ * @brief Execute by reading from command string list.
+ * @warning Returned string must be freed after use.
+ *
+ * @param args Argument list for command string.
+ * @param length Length for @p args.
+ * @return Pointer to response string. NULL if client requested termination.
+ */
+char *handle_cmd(char *args[], int length) {
+  debug_print("handling command %s...", args[0]);
+  char *response = malloc(sizeof(char) * MAXLINE);
+
+  if (!strcmp(args[0], "exit")) {
+    // client requested termination
+    free(response);
+    return NULL;
+  } else if (!strcmp(args[0], "show")) {
+    // show current stock status
+    char *status = fetch_stock_stat();
+    strcpy(response, status);
+    free(status);
+  } else if (!strcmp(args[0], "buy")) {
+    // remove item from stock
+  } else if (!strcmp(args[0], "sell")) {
+    // add item to stock
+  } else {
+    debug_print("invalid command \"%s\"", args[0]);
+    strcpy(response, "invalid command");
+  }
+  return response;
 }
