@@ -1,11 +1,12 @@
 /*
  * echoserveri.c - An iterative echo server
  */
-#define DEBUG
-
 /* $begin echoserverimain */
 #include "csapp.h"
 #include "misc.h"
+#include "stock.h"
+
+#define MAX_CONNECTION 256
 
 void echo(int connfd);
 
@@ -24,6 +25,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "usage: %s <port>\n", argv[0]);
     exit(0);
   }
+
+  stock_init();
 
   listenfd = Open_listenfd(argv[1]);
   debug_print("now listening...");
@@ -73,7 +76,6 @@ void handle_connection(int connfd) {
 
 /**
  * @brief Parse given command string into blocks.
- *
  * @warning Execution is destructive for argument @p cmd.
  *
  * @param cmd Null-terminated command string
@@ -103,17 +105,17 @@ size_t parse(char *cmd, char **buf) {
  */
 char *handle_cmd(char *args[], int length) {
   debug_print("handling command %s...", args[0]);
-  char *response = malloc(sizeof(char) * MAXLINE);
+  char *response = Malloc(sizeof(char) * MAXLINE);
 
   if (!strcmp(args[0], "exit")) {
     // client requested termination
-    free(response);
+    Free(response);
     return NULL;
   } else if (!strcmp(args[0], "show")) {
     // show current stock status
     char *status = fetch_stock_stat();
     strcpy(response, status);
-    free(status);
+    Free(status);
   } else if (!strcmp(args[0], "buy")) {
     // remove item from stock
   } else if (!strcmp(args[0], "sell")) {
