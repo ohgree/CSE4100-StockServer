@@ -38,14 +38,13 @@ extern struct __db stock_db;
 
 void stock_init(void);
 void stock_write(void);
+char *stock_write_to_buf(char *s);
 
 int insert(int id, int n, int price);
 
 stock_item *__search(stock_item *root, int id, stock_status *status);
 void __write_item(stock_item *root, FILE *fp);
+void __snprint_item(stock_item *root, char *s);
 void __print_db();
 
-int update_stock_table(int connfd);
-int buy(int id, int n);
-int sell(int id, int n);
 #endif /* __STOCK_H__ */

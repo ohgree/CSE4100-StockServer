@@ -15,5 +15,3 @@ char *rtrim(char *s) {
 }
 
 char *trim(char *s) { return rtrim(ltrim(s)); }
-
-char *fetch_stock_stat(void) { return "NotImplemented"; }
