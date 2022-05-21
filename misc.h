@@ -24,6 +24,4 @@ char *ltrim(char *s);
 char *rtrim(char *s);
 char *trim(char *s);
 
-char *fetch_stock_stat(void);
-
 #endif /* __MISC_H__ */

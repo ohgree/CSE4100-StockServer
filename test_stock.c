@@ -1,6 +1,8 @@
 #include "stock.h"
 
 int main(int argc, const char *argv[]) {
+  char buf[MAXLINE];
+
   stock_init();
 
   insert(1, 10, 5000);
@@ -16,6 +18,8 @@ int main(int argc, const char *argv[]) {
   insert(2, -100, 200);   // attempts to remove more than count should fail
   insert(666, -1, 31415); // attempts to remove non-existing entry should fail
   __print_db();
+
+  printf("%s\n", stock_write_to_buf(buf));
 
   stock_write(); // should write to file
 

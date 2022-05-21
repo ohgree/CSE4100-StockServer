@@ -102,6 +102,13 @@ void stock_write() {
   Fclose(fp);
 }
 
+char *stock_write_to_buf(char *s) {
+  memset(s, 0, strlen(s));
+  debug_print("writing %d entries to buffer", stock_db.size);
+  __snprint_item(stock_db.tree, s);
+  return s;
+}
+
 /**
  * @brief Search for position in @p root suitable for @p id to be in.
  *
@@ -160,6 +167,21 @@ void __write_item(stock_item *root, FILE *fp) {
   __write_item(root->lchild, fp);
   fprintf(fp, "%d %d %d\n", root->id, root->count, root->price);
   __write_item(root->rchild, fp);
+}
+
+/**
+ * @brief Print all entries in database to buffer
+ */
+void __snprint_item(stock_item *root, char *s) {
+  char buf[MAXLINE];
+  if (!root) {
+    return;
+  }
+  debug_print("on node id=%d", root->id);
+  __snprint_item(root->lchild, s);
+  snprintf(buf, sizeof(buf), "%d %d %d\n", root->id, root->count, root->price);
+  strcat(s, buf);
+  __snprint_item(root->rchild, s);
 }
 
 /**
