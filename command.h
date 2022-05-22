@@ -13,6 +13,7 @@ typedef enum {
 } cmd_status;
 
 cmd_status handle_connection(int connfd);
+void handle_threaded_connection(int connfd);
 cmd_status buy(int id, int n);
 cmd_status sell(int id, int n);
 

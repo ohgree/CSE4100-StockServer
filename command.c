@@ -1,5 +1,13 @@
 #include "command.h"
 
+static sem_t mutex;
+static int byte_len;
+
+static void __init_threaded_connection(void) {
+  byte_len = 0;
+  Sem_init(&mutex, 0, 1);
+}
+
 /**
  * @brief Handle connection for @p connfd
  *
@@ -37,6 +45,48 @@ cmd_status handle_connection(int connfd) {
   debug_print("handler returned with status %d", status);
 
   return status;
+}
+
+void handle_threaded_connection(int connfd) {
+  int n, plen;
+  char buf[MAXLINE];
+  char response[MAXLINE];
+  cmd_status status = COMMAND_ERROR;
+  rio_t rio;
+
+  static pthread_once_t once = PTHREAD_ONCE_INIT;
+
+  Pthread_once(&once, __init_threaded_connection);
+
+  Rio_readinitb(&rio, connfd);
+  while ((n = Rio_readlineb(&rio, buf, MAXLINE))) {
+    char *pbuf[MAX_COMMAND_ARGS];
+
+    memset(response, 0, sizeof(response));
+    debug_print("server received %d bytes", n);
+
+    plen = __parse(rtrim(buf), pbuf);
+    for (int i = 0; i < plen; i++) {
+      debug_print("pbuf[%d] = \"%s\"", i, pbuf[i]);
+    }
+
+    status = __handle_command(pbuf, plen, response);
+
+    P(&mutex);
+    byte_len += n;
+    debug_print(
+        "server received %d (%d total) bytes on thread 0x%02x with fd=%d", n,
+        byte_len, (unsigned long)pthread_self(), connfd);
+    V(&mutex);
+
+    // write size must be equal to client Rio_readnb() read size
+    Rio_writen(connfd, response, MAXLINE);
+    debug_print("response to client: \"%s\"", response);
+    debug_print("handler returned with status %d", status);
+    if (status == COMMAND_EXIT) {
+      break;
+    }
+  }
 }
 
 /**
@@ -124,18 +174,37 @@ cmd_status __handle_command(char *args[], int length, char response[]) {
  */
 cmd_status buy(int id, int n) {
   // remove item from stock db
+  int is_number_valid;
   stock_item *item;
   cmd_status result = COMMAND_INVALID;
   if ((item = search_stock(id))) {
     debug_print("item found with id=%d, count=%d, price=%d", id, item->count,
                 item->price);
-    if (insert(id, -n, item->price) == STOCK_SUCCESS) {
-      debug_print("successfully inserted item");
+
+    P(&item->r_mutex);
+    if (++item->read_cnt == 1) {
+      P(&item->w_mutex); // first in - lock write
+    }
+    V(&item->r_mutex);
+
+    is_number_valid = item->count >= n;
+
+    P(&item->r_mutex);
+    if (--item->read_cnt == 0) {
+      V(&item->w_mutex); // last out - unlock write
+    }
+    V(&item->r_mutex);
+
+    if (is_number_valid) {
+      P(&item->w_mutex);
+      item->count -= n;
+      V(&item->w_mutex);
       result = COMMAND_SUCCESS;
+      debug_print("successfully inserted item");
     } else {
       debug_print("failed to insert item");
     }
-  } else {
+
     debug_print("no item found with id=%d", id);
   }
 
@@ -153,5 +222,20 @@ cmd_status buy(int id, int n) {
  */
 cmd_status sell(int id, int n) {
   // add item to stock db
-  return buy(id, -n);
+  stock_item *item;
+  cmd_status result = COMMAND_INVALID;
+  if ((item = search_stock(id))) {
+    debug_print("item found with id=%d, count=%d, price=%d", id, item->count,
+                item->price);
+
+    P(&item->w_mutex); //  lock write
+    item->count += n;
+    V(&item->w_mutex); // unlock write
+
+    debug_print("successfully inserted item");
+    result = COMMAND_SUCCESS;
+  } else {
+    debug_print("failed to insert item");
+  }
+  return result;
 }

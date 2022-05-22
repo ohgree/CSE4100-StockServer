@@ -22,7 +22,8 @@ struct __item {
   int count;
   int price;
   int read_cnt;
-  sem_t mutex;
+  sem_t r_mutex;
+  sem_t w_mutex;
   struct __item *lchild;
   struct __item *rchild;
 };

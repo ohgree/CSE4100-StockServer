@@ -33,7 +33,11 @@ stock_status insert(int id, int n, int price) {
         .id = id,
         .count = n,
         .price = price,
+        .read_cnt = 0,
     };
+    Sem_init(&new->r_mutex, 0, 1);
+    Sem_init(&new->w_mutex, 0, 1);
+
     stock_db.tree = new;
     stock_db.size++;
     return STOCK_SUCCESS;
@@ -56,7 +60,11 @@ stock_status insert(int id, int n, int price) {
         .id = id,
         .count = n,
         .price = price,
+        .read_cnt = 0,
     };
+    Sem_init(&new->r_mutex, 0, 1);
+    Sem_init(&new->w_mutex, 0, 1);
+
     if (item->id < id) {
       item->rchild = new;
     } else {
@@ -205,8 +213,23 @@ void __snprint_item(stock_item *root, char *s) {
     return;
   }
   debug_print("on node id=%d", root->id);
+
   __snprint_item(root->lchild, s);
+
+  P(&root->r_mutex); // lock read
+  if (++root->read_cnt == 1) {
+    P(&root->w_mutex); // lock write
+  }
+  V(&root->r_mutex);
+
   snprintf(buf, sizeof(buf), "%d %d %d\n", root->id, root->count, root->price);
+
+  P(&root->r_mutex); // lock read
+  if (--root->read_cnt == 0) {
+    V(&root->w_mutex); // unlock write
+  }
+  V(&root->r_mutex);
+
   strcat(s, buf);
   __snprint_item(root->rchild, s);
 }

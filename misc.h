@@ -2,6 +2,7 @@
 #define __MISC_H__
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef DEBUG
