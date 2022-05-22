@@ -16,7 +16,7 @@ struct __db stock_db = {
  * @return STOCK_SUCCESS by default, STOCK_FAILED when there are not
  * enough number of stocks to remove
  */
-int insert(int id, int n, int price) {
+stock_status insert(int id, int n, int price) {
   stock_status status;
   debug_print("inserting id=%d, n=%d, price=%d", id, n, price);
   stock_item *item = __search(stock_db.tree, id, &status);
@@ -107,6 +107,17 @@ char *stock_write_to_buf(char *s) {
   debug_print("writing %d entries to buffer", stock_db.size);
   __snprint_item(stock_db.tree, s);
   return s;
+}
+
+stock_item *search_stock(int id) {
+  stock_status status;
+  stock_item *item;
+  debug_print("searching for stock with id=%d", id);
+  item = __search(stock_db.tree, id, &status);
+  if (status != STOCK_MATCH) {
+    return NULL;
+  }
+  return item;
 }
 
 /**
