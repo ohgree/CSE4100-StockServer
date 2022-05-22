@@ -40,7 +40,8 @@ void stock_init(void);
 void stock_write(void);
 char *stock_write_to_buf(char *s);
 
-int insert(int id, int n, int price);
+stock_status insert(int id, int n, int price);
+stock_item *search_stock(int id);
 
 stock_item *__search(stock_item *root, int id, stock_status *status);
 void __write_item(stock_item *root, FILE *fp);

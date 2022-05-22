@@ -15,7 +15,11 @@ status_cmd handle_connection(int connfd) {
   memset(response, 0, sizeof(response));
 
   Rio_readinitb(&rio, connfd);
-  if (n = Rio_readlineb(&rio, buf, MAXLINE)) {
+  if (!(n = Rio_readlineb(&rio, buf, MAXLINE))) {
+    // handle client termination via ctrl-c
+    debug_print("client terminated the connection");
+    return COMMAND_EXIT;
+  } else {
     char *pbuf[MAX_COMMAND_ARGS];
     debug_print("server received %d bytes", n);
 
@@ -83,17 +87,19 @@ status_cmd __handle_command(char *args[], int length, char response[]) {
   } else if (length == 3) {
     int id = atoi(args[1]);
     int count = atoi(args[2]);
+    debug_print("handling 3-arg command: %s %d %d", args[0], id, count);
 
     if (!strcmp(args[0], "buy")) {
       // remove item from stock
       ret = buy(id, count);
     } else if (!strcmp(args[0], "sell")) {
       // add item to stock
+      // TODO: handle trying to sell non-existing stock id
       ret = sell(id, count);
     }
 
     if (ret == COMMAND_SUCCESS) {
-      sprintf(response, "[%s] success", args[0]);
+      sprintf(response, "[%s] success\n", args[0]);
     } else {
       strcpy(response, "Not enough left stocks\n");
     }
@@ -105,5 +111,27 @@ status_cmd __handle_command(char *args[], int length, char response[]) {
   return ret;
 }
 
-status_cmd buy(int id, int n) { unix_error("not implemented"); }
-status_cmd sell(int id, int n) { unix_error("not implemented"); }
+status_cmd buy(int id, int n) {
+  // remove item from stock db
+  stock_status status;
+  stock_item *item;
+  status_cmd result = COMMAND_INVALID;
+  if (item = search_stock(id)) {
+    debug_print("item found with id=%d, count=%d, price=%d", id, item->count,
+                item->price);
+    if (insert(id, -n, item->price) == STOCK_SUCCESS) {
+      debug_print("successfully inserted item");
+      result = COMMAND_SUCCESS;
+    } else {
+      debug_print("failed to insert item");
+    }
+  } else {
+    debug_print("no item found with id=%d", id);
+  }
+
+  return result;
+}
+status_cmd sell(int id, int n) {
+  // add item to stock db
+  return buy(id, -n);
+}
