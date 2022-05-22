@@ -4,12 +4,13 @@
  * @brief Handle connection for @p connfd
  *
  * @param connfd File descriptor for connection
+ * @return Command execution's resulting status code
  */
-status_cmd handle_connection(int connfd) {
+cmd_status handle_connection(int connfd) {
   int n, plen;
   char buf[MAXLINE];
   char response[MAXLINE];
-  status_cmd status = COMMAND_ERROR;
+  cmd_status status = COMMAND_ERROR;
   rio_t rio;
 
   memset(response, 0, sizeof(response));
@@ -65,11 +66,11 @@ size_t __parse(char *cmd, char **buf) {
  * @param args Argument list for command string.
  * @param length Length for @p args.
  * @param response Reference to variable for storing response string.
- * @return Pointer to response string. NULL if client requested termination.
+ * @return Resulting status code
  */
-status_cmd __handle_command(char *args[], int length, char response[]) {
+cmd_status __handle_command(char *args[], int length, char response[]) {
   debug_print("handling command \"%s\"...", args[0]);
-  status_cmd ret = COMMAND_SUCCESS;
+  cmd_status ret = COMMAND_SUCCESS;
 
   if (length == 1) {
     if (!strcmp(args[0], "exit")) {
@@ -111,12 +112,21 @@ status_cmd __handle_command(char *args[], int length, char response[]) {
   return ret;
 }
 
-status_cmd buy(int id, int n) {
+/**
+ * @brief Remove item from stack db.
+ *
+ * @param id id of the stock item to buy.
+ * @param n number of stock items to buy.
+ * @return cmd_status typed enum:
+ *  - #COMMAND_SUCCESS if db was successfully modified
+ *  - #COMMAND_INVALID if no such item with given id was found, or when item
+ * count was not enough
+ */
+cmd_status buy(int id, int n) {
   // remove item from stock db
-  stock_status status;
   stock_item *item;
-  status_cmd result = COMMAND_INVALID;
-  if (item = search_stock(id)) {
+  cmd_status result = COMMAND_INVALID;
+  if ((item = search_stock(id))) {
     debug_print("item found with id=%d, count=%d, price=%d", id, item->count,
                 item->price);
     if (insert(id, -n, item->price) == STOCK_SUCCESS) {
@@ -131,7 +141,17 @@ status_cmd buy(int id, int n) {
 
   return result;
 }
-status_cmd sell(int id, int n) {
+
+/**
+ * @brief Add item to stack db.
+ *
+ * @param id id of the stock item to sell.
+ * @param n number of stock items to sell.
+ * @return cmd_status typed enum:
+ *  - #COMMAND_SUCCESS if db was successfully updated
+ *  - #COMMAND_INVALID if no such item with given id was found
+ */
+cmd_status sell(int id, int n) {
   // add item to stock db
   return buy(id, -n);
 }

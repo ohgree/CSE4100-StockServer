@@ -10,13 +10,13 @@ typedef enum {
   COMMAND_SUCCESS,
   COMMAND_EXIT,
   COMMAND_INVALID,
-} status_cmd;
+} cmd_status;
 
-status_cmd handle_connection(int connfd);
-status_cmd buy(int id, int n);
-status_cmd sell(int id, int n);
+cmd_status handle_connection(int connfd);
+cmd_status buy(int id, int n);
+cmd_status sell(int id, int n);
 
 size_t __parse(char *cmd, char **buf);
-status_cmd __handle_command(char *args[], int length, char response[]);
+cmd_status __handle_command(char *args[], int length, char response[]);
 
 #endif /* __COMMAND_H__ */

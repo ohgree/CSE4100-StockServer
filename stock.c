@@ -87,7 +87,7 @@ void stock_init(void) {
   }
   Fclose(fp);
 
-  debug_print("stock init complete. root addr.=%#010x, size=%d", stock_db.tree,
+  debug_print("stock init complete. root addr.=%#010x, size=%zu", stock_db.tree,
               stock_db.size);
 }
 
@@ -96,19 +96,32 @@ void stock_init(void) {
  */
 void stock_write() {
   FILE *fp;
-  debug_print("writing %d entries to file", stock_db.size);
+  debug_print("writing %zu entries to file", stock_db.size);
   fp = Fopen(STOCK_DB_FILENAME, "w");
   __write_item(stock_db.tree, fp);
   Fclose(fp);
 }
 
+/**
+ * @brief Print stock database to @p s buffer.
+ *
+ * @param s Reference of buffer to print to.
+ * @return Pointer to written buffer.
+ */
 char *stock_write_to_buf(char *s) {
   memset(s, 0, strlen(s));
-  debug_print("writing %d entries to buffer", stock_db.size);
+  debug_print("writing %zu entries to buffer", stock_db.size);
   __snprint_item(stock_db.tree, s);
   return s;
 }
 
+/**
+ * @brief Search for stock item in db with matching @p id
+ *
+ * @param id ID of stock item to search for.
+ * @return Pointer to stock item with matching @p id. NULL if no such item were
+ * found.
+ */
 stock_item *search_stock(int id) {
   stock_status status;
   stock_item *item;
@@ -166,7 +179,7 @@ stock_item *__search(stock_item *root, int id, stock_status *status) {
 }
 
 /**
- * @brief Recursively write @p data into file pointed by @p fp.
+ * @brief Recursively write @p data into @p fp.
  *
  * @param root Root of the stock database to write
  * @param fp File pointer to write to
@@ -181,7 +194,10 @@ void __write_item(stock_item *root, FILE *fp) {
 }
 
 /**
- * @brief Print all entries in database to buffer
+ * @brief Print entries in database @p root to buffer @p s.
+ *
+ * @param root Root of the stock database.
+ * @param s buffer to write to.
  */
 void __snprint_item(stock_item *root, char *s) {
   char buf[MAXLINE];
