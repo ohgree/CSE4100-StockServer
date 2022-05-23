@@ -39,7 +39,9 @@ int main(int argc, char **argv) {
       srand((unsigned int)getpid());
 
       for (i = 0; i < ORDER_PER_CLIENT; i++) {
-        int option = rand() % 3;
+        // int option = rand() % 2 ? 2 : 0; // test 4. show + sell
+        // int option = rand() % 2; // test 5. show + buy
+        int option = rand() % 3; // test 6. show + sell + buy
 
         if (option == 0) { // show
           strcpy(buf, "show\n");
@@ -50,6 +52,7 @@ int main(int argc, char **argv) {
           strcpy(buf, "buy ");
           sprintf(tmp, "%d", list_num);
           strcat(buf, tmp);
+
           strcat(buf, " ");
           sprintf(tmp, "%d", num_to_buy);
           strcat(buf, tmp);
@@ -66,7 +69,9 @@ int main(int argc, char **argv) {
           strcat(buf, tmp);
           strcat(buf, "\n");
         }
-        // strcpy(buf, "buy 1 2\n");
+        // strcpy(buf, "show 1 1\n"); // test 1
+        // strcpy(buf, "sell 1 1\n"); // test 2
+        // strcpy(buf, "buy 1 1\n"); // test 3
 
         Rio_writen(clientfd, buf, strlen(buf));
         // Rio_readlineb(&rio, buf, MAXLINE);
